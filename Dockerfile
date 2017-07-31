@@ -1,22 +1,22 @@
-FROM ubuntu:16.04
+FROM ubuntu:16.04 as base
 
-ENV DEBIAN_FRONTEND=noninteractive \
-    LANG=en_US.UTF-8 \
-    TERM=xterm
-RUN locale-gen en_US en_US.UTF-8
-RUN echo "export PS1='\e[1;31m\]\u@\h:\w\\$\[\e[0m\] '" >> /root/.bashrc
-RUN echo "export PS1='\e[1;31m\]\u@\h:\w\\$\[\e[0m\] '" >> /etc/bash.bashrc
+ENV DEBIAN_FRONTEND=noninteractive TERM=xterm
+RUN echo "export > /etc/envvars" >> /root/.bashrc && \
+    echo "export PS1='\[\e[1;31m\]\u@\h:\w\\$\[\e[0m\] '" | tee -a /root/.bashrc /etc/skel/.bashrc && \
+    echo "alias tcurrent='tail /var/log/*/current -f'" | tee -a /root/.bashrc /etc/skel/.bashrc
+
 RUN apt-get update
+RUN apt-get install -y locales && locale-gen en_US.UTF-8 && dpkg-reconfigure locales
+ENV LANGUAGE=en_US.UTF-8 LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 
 # Runit
 RUN apt-get install -y --no-install-recommends runit
-CMD export > /etc/envvars && /usr/sbin/runsvdir-start
-RUN echo 'export > /etc/envvars' >> /root/.bashrc
+CMD bash -c 'export > /etc/envvars && /usr/sbin/runsvdir-start'
 
 # Utilities
-RUN apt-get install -y --no-install-recommends vim less net-tools inetutils-ping wget curl git telnet nmap socat dnsutils netcat tree htop unzip sudo software-properties-common jq psmisc iproute python ssh
+RUN apt-get install -y --no-install-recommends vim less net-tools inetutils-ping wget curl git telnet nmap socat dnsutils netcat tree htop unzip sudo software-properties-common jq psmisc iproute python ssh rsync gettext-base
 
-RUN wget https://releases.hashicorp.com/packer/0.12.1/packer_0.12.1_linux_amd64.zip && \
+RUN wget https://releases.hashicorp.com/packer/1.0.3/packer_1.0.3_linux_amd64.zip && \
     unzip packer*.zip && \
     rm packer*.zip && \
     mv packer /usr/local/bin
